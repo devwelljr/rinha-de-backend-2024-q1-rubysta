@@ -1,0 +1,59 @@
+services:
+    api01: &api
+        build:
+            context: .
+        hostname: api01
+        container_name: api01
+        depends_on:
+            - postgres
+        ports:
+            - "8081:8080"
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.5"
+                    memory: "200MB"
+        volumes:
+            - .:/app
+        env_file:
+            - .env
+
+    api02:
+        <<: *api
+        container_name: api02
+        ports:
+            - "8082:8080"
+        env_file:
+            - .env
+
+    postgres:
+        image: postgres:latest
+        container_name: postgres
+        environment:
+            - POSTGRES_DB=banco_rinha_2024
+            - POSTGRES_PASSWORD=post123
+        ports:
+            - 5432:5432
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.7'
+                    memory: '250MB'
+        volumes:
+            - ./config/init.sql:/docker-entrypoint-initdb.d/init.sql
+            - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
+
+    nginx:
+        image: nginx:latest
+        ports:
+            - "9999:9999"
+        volumes:
+            - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
+        depends_on:
+            - api01
+            - api02
+        deploy:
+            resources:
+                limits:
+                    cpus: "0.3"
+                    memory: "50MB"
